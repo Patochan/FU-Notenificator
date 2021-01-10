@@ -13,8 +13,8 @@ Sendet eine Notification via Telegram Bot an den gewünschten User
   token = Token des TelegramBots (wird bei der Erstellung des Bots generiert)
 	
   notify = Telegram UserId 
-	
-     Diese kann mittels Nachricht an deinen Bot und dem anschliessenden Aufruf von https://api.telegram.org/bot<BOTID>/getUpdates (wobei <BOTID> der zuvor generierte Token ist)
+	Diese kann mittels Nachricht an deinen Bot und dem anschliessenden Aufruf 
+	von https://api.telegram.org/bot<BOTID>/getUpdates (wobei <BOTID> der zuvor generierte Token ist)
   
   [FU]
   posurl = URL des POS der FernUni 
