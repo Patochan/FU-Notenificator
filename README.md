@@ -2,11 +2,11 @@
 Abfragescript für die Notenverwaltung der FernUni Hagen.
 Sendet eine Notification via Telegram Bot an den gewünschten User
 
-# Anforderungen
+## Anforderungen
 - python3 mit den Modulen urllib, lxml.html, requests, json & configparser
 - Telegram Account
 
-# Konfiguration
+## Konfiguration
 1. Erstelle einen TelegramBot => https://core.telegram.org/bots
 2. config.ini: 
 
