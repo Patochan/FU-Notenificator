@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# VisualStudio
+.pyproj
+
 # Distribution / packaging
 .Python
 build/
@@ -123,3 +126,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+*.pyproj
