@@ -10,6 +10,7 @@ Sendet eine Notification via Telegram Bot an den gewünschten User
 1. Erstelle einen TelegramBot => https://core.telegram.org/bots
 2. config.ini
   [BOT]
+  
   token = Token des TelegramBots (wird bei der Erstellung des Bots generiert)
 	
   notify = Telegram UserId 
@@ -25,4 +26,5 @@ Sendet eine Notification via Telegram Bot an den gewünschten User
 	
 
   [STORAGE]
+  
   filename = lokales File, in welchen die Klausuren für den Vergleich abgespeichert werden.
