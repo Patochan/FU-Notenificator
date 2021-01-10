@@ -25,6 +25,6 @@ Sendet eine Notification via Telegram Bot an den gewünschten User
   password = FernUni Passwort (Achtung, Passwort wird Klartext gespeichert!)
 	
 
-  [STORAGE]
+  [STORE]
   
   filename = lokales File, in welchen die Klausuren für den Vergleich abgespeichert werden.
