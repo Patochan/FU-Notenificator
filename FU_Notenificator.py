@@ -1,7 +1,8 @@
-import http.client, urllib, lxml.html, requests, json, configparser
+import os, urllib, lxml.html, requests, json, configparser, sys
 
 
-def erstelleKlausurEintrag(Modulnummer, Modulname, Semester, Note, Status, ECTS, Punkte, Anrechnung, Versuch, Datum):
+
+def createKlausurEntry(Modulnummer, Modulname, Semester, Note, Status, ECTS, Punkte, Anrechnung, Versuch, Datum):
     if Note == None:
         Note = ""
     if Punkte == None:
@@ -23,95 +24,61 @@ def erstelleKlausurEintrag(Modulnummer, Modulname, Semester, Note, Status, ECTS,
                     }
     return(klausurEintrag)
 
-
-# lade gespeichertes json aus dem file
-def getKlausurenCached():
-    klausurenCached = {"klausuren": []}
+# fetch data from locally stored file. 
+def getKlausurenStored():
     try:
-        with open(cfg["CACHE"]["filename"], 'r') as infile:
-            klausurenCached = json.load(infile)
+        with open(os.path.join(ROOT_DIR, cfg["CACHE"]["filename"]), 'r') as infile:
+            return(json.load(infile))
     except Exception as e:
-        print(e)
-
-    return(klausurenCached)
-
-
+        print("error while parsing data from file", e)
+        return ( {"klausuren": []} )
+        
 def getKlausurenNew():
     klausurenNew = {"klausuren": []}
+    try:
+        s = requests.Session() 
+        res = s.get(cfg["FU"]["posurl"])
 
-    username = cfg["FU"]["username"]
-    password = cfg["FU"]["password"]
-    body = "asdf={}&fdsa={}&submit=Anmelden".format(username, password)
-    headers = {"Connection": "keep-alive"}
-    connection = http.client.HTTPSConnection("pos.fernuni-hagen.de")
-    connection.request("GET", "/qisserver/rds?state=user&type=1&category=auth.login&startpage=portal.vm&breadCrumbSource=portal")
-    response = connection.getresponse()
+        loginForm = lxml.html.fromstring(res.text).xpath(".//a[contains(text(), 'Notenübersicht')]")[0].xpath(".//@href")[0]
+        res = s.get("{}{}".format(cfg["FU"]["posurl"],loginForm) ) 
 
-    if response.status == 200:
-        response.read()
-        session_id = response.getheader("Set-Cookie")[:43]
-        cookie = session_id
-        headers = {"Cookie": cookie, "Connection": "keep-alive", "Content-Type": "application/x-www-form-urlencoded"}
+        loginUrl = lxml.html.fromstring(res.text).xpath(".//form/@action")[0]
+        loginData = {
+                         "asdf": cfg["FU"]["username"],
+                         "fdsa": cfg["FU"]["password"],
+                         "submit": "Anmelden"
+                     }
 
-        connection.request("POST", "/qisserver/rds;{}?state=user&type=1&category=auth.login&startpage=portal.vm&breadCrumbSource=portal".format(session_id), body=body, headers=headers)
-        response = connection.getresponse()
-        prev_session_id = session_id
+        res = s.post(url=loginUrl, data=loginData)
+        # check if login failed (wrong username or password for example)
+        if ("fehlgeschlagen" in res.text) :
+            sys.exit("POS Anmeldung fehlgeschlagen")
 
-        if response.status != 302:
-            print("Something went wrong:")
-            print("Status", response.status, "instead of 302")
-        else:
-            session_id = response.getheader("Set-Cookie")[:43]
-            location = response.getheader("Location")[28:]
-            cookie = "{};{}".format(session_id, prev_session_id)
-            headers = {"Cookie": cookie, "Connection": "keep-alive"}
-            response.read()
+        pruefungsVerwaltungUrl = lxml.html.fromstring(res.text).xpath(".//a[contains(text(), 'Prüfungsverwaltung')]")[0].xpath(".//@href")[0]
+        res = s.get(pruefungsVerwaltungUrl)
+        notenUebersichtUrl = lxml.html.fromstring(res.text).xpath(".//a[contains(text(), 'Notenübersicht')]")[0].xpath(".//@href")[0]
+        res = s.get(notenUebersichtUrl)
+        leistungsUebersichtUrl = lxml.html.fromstring(res.text).xpath(".//a[@title='Leistungen für  Übersicht  über alle Leistungen anzeigen']")[0].xpath(".//@href")[0]
+        res = s.get(leistungsUebersichtUrl)
 
-            connection.request("GET", location, headers=headers)
-            response = connection.getresponse()
+        klausurData = res.text.replace("\t","").replace("\n","").replace("  ","")
+        klausuren = lxml.html.fromstring(klausurData).xpath(".//tr")
+        for klausur in klausuren:
+            klausurDetails = klausur.xpath(".//td")   
+            if len(klausurDetails) == 10: 
+                klausurenNew["klausuren"].append( createKlausurEntry (klausurDetails[0].text, klausurDetails[1].text, klausurDetails[2].text, klausurDetails[3].text, klausurDetails[4].text, klausurDetails[5].text, klausurDetails[6].text, klausurDetails[7].text, klausurDetails[8].text, klausurDetails[9].text))
+        return(klausurenNew)
 
-            prev_session_id = session_id
-            response.read()
+    except Exception as e:
+        print(e)
+        sys.exit("Fehler beim Abfragen der Noten")
 
-            path = "https://pos.fernuni-hagen.de/qisserver/rds?state=change&type=1&moduleParameter=studyPOSMenu&nextdir=change&next=menu.vm&subdir=applications&xml=menu&purge=y&navigationPosition=functions%2CstudyPOSMenu&breadcrumb=studyPOSMenu&topitem=functions&subitem=studyPOSMenu"
-            connection.request("GET", path, headers=headers)
-            response = connection.getresponse()
-            data = response.read()
-            lines = data.split(b"<a href=\"")
-
-            for line in lines:
-                line = line[:line.find(b"\"")]
-                if line.find(b"notenspiegelStudent") != -1:
-                    location = line.decode("utf-8")[28:].replace("&amp;", "&")
-                    connection.request("GET", location, headers=headers)
-                    response = connection.getresponse()
-                    data = response.read()
-
-                    lines = data.split(b"<a href=\"")
-                    for line in lines:
-                        if line.find(b"Leistungen f\xc3\xbcr  \xc3\x9cbersicht  \xc3\xbcber alle Leistungen anzeigen")!= -1:
-                            line = line[:line.find(b"\"")]
-                            location = line.decode("utf-8")[28:].replace("&amp;", "&")
-                            connection.request("GET", location, headers=headers)
-                            response = connection.getresponse()
-                            data = response.read().decode("utf-8").replace("\t","").replace("\n","").replace("  ","")
-                            data = lxml.html.fromstring(data)
-                    
-                            trs = data.findall(".//tr")
-                            for tr in trs: 
-                                    tds = tr.findall(".//td")
-                                    # Klausuren enthalten 10 td-Elemente
-                                    if len(tds) == 10: 
-                                        klausur = erstelleKlausurEintrag( tds[0].text , tds[1].text, tds[2].text, tds[3].text, tds[4].text, tds[5].text, tds[6].text, tds[7].text, tds[8].text, tds[9].text)
-                                        klausurenNew["klausuren"].append(klausur)
-                            return(klausurenNew)
-
-
-def compareKlausurData(klausurenNew,klausurenCached):
+def compareKlausurData(klausurenNew, klausurenStored):
     klausurenNotFound = []
+
     for klausurNew in klausurenNew["klausuren"]:
         found = False
-        for klausurCache in klausurenCached["klausuren"]:
+        for klausurCache in klausurenStored["klausuren"]:
             if klausurCache["Key"] == klausurNew["Key"]:
                 found = True
         if found == False:
@@ -122,28 +89,27 @@ def compareKlausurData(klausurenNew,klausurenCached):
     else:
         message = "NEUE RESULTATE GEFUNDEN\n-------------------\n"
         for neuesResultat in klausurenNotFound:
-            notenText = " "
-            versuch = " im " + neuesResultat["Versuch"] +". Versuch "
+            notenText = ""
+            versuch = "im " + neuesResultat["Versuch"] +". Versuch "
             if (neuesResultat["Note"] != ""):
-                notenText = " mit {} ".format(neuesResultat["Note"])
+                notenText = "mit {}".format(neuesResultat["Note"])
             if neuesResultat["Status"] == "bestanden":
-                message = message + "Gratuliere, du hast '" + neuesResultat["Modulname"] + "'"+notenText+versuch+"bestanden! :)\n"
+                message = message + "- Gratuliere, du hast '" + neuesResultat["Modulname"] + "' " + notenText + " " + versuch +" bestanden! :)\n"
             else:
-                message = message + "Du hast '" + neuesResultat["Modulname"] + "'"+notenText+versuch+"leider nicht bestanden! :(\n"
+                message = message + "- Du hast '" + neuesResultat["Modulname"] + "' " + notenText + " " + versuch +" leider nicht bestanden! :(\n"
             message = message.replace("  ", " ")
-
-        if (cfg["TELEGRAMBOT"]["enabled"] == 1):
+        print (message)
+        if (cfg["BOT"]["enabled"] == "1" or cfg["BOT"]["enabled"] == 1):
+            print("Sende notification via Telegram")
             url = 'https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s' % (
-                    cfg["TELEGRAMBOT"]["token"], cfg["TELEGRAMBOT"]["notify"], urllib.parse.quote_plus(message))
+                    cfg["BOT"]["token"], cfg["BOT"]["notify"], urllib.parse.quote_plus(message))
             res = requests.get(url, timeout=10)
-    with open(cfg["CACHE"]["filename"], 'w') as outfile:
+    with open(  os.path.join(ROOT_DIR, cfg["CACHE"]["filename"]), 'w') as outfile:
         json.dump(klausurenNew, outfile)
 
 
-
-
-
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 cfg = configparser.ConfigParser()
-cfg.read("config.ini")
+cfg.read(os.path.join(ROOT_DIR, "config.ini"))
 
-compareKlausurData(getKlausurenNew(), getKlausurenCached())
+compareKlausurData(getKlausurenNew(), getKlausurenStored())
