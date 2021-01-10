@@ -27,7 +27,7 @@ def createKlausurEntry(Modulnummer, Modulname, Semester, Note, Status, ECTS, Pun
 # fetch data from locally stored file. 
 def getKlausurenStored():
     try:
-        with open(os.path.join(ROOT_DIR, cfg["CACHE"]["filename"]), 'r') as infile:
+        with open(os.path.join(ROOT_DIR, cfg["STORE"]["filename"]), 'r') as infile:
             return(json.load(infile))
     except Exception as e:
         print("error while parsing data from file", e)
@@ -104,7 +104,7 @@ def compareKlausurData(klausurenNew, klausurenStored):
             url = 'https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s' % (
                     cfg["BOT"]["token"], cfg["BOT"]["notify"], urllib.parse.quote_plus(message))
             res = requests.get(url, timeout=10)
-    with open(  os.path.join(ROOT_DIR, cfg["CACHE"]["filename"]), 'w') as outfile:
+    with open(  os.path.join(ROOT_DIR, cfg["STORE"]["filename"]), 'w') as outfile:
         json.dump(klausurenNew, outfile)
 
 

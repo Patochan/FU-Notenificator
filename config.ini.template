@@ -9,5 +9,5 @@ posurl=
 username=
 password=
 
-[CACHE]
+[STORE]
 filename=klausuren.json
