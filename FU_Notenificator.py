@@ -1,12 +1,6 @@
 import os, urllib, lxml.html, requests, json, configparser, sys
 
-
-
 def createKlausurEntry(Modulnummer, Modulname, Semester, Note, Status, ECTS, Punkte, Anrechnung, Versuch, Datum):
-    if Note == None:
-        Note = ""
-    if Punkte == None:
-        Punkte = ""
     
     key = "{}_{}".format(Modulnummer, Versuch)
 
@@ -14,12 +8,12 @@ def createKlausurEntry(Modulnummer, Modulname, Semester, Note, Status, ECTS, Pun
                         "Modulnummer": Modulnummer,
                         "Modulname": Modulname[1:],
                         "Semester": Semester,
-                        "Note": Note.replace(" ",""),
+                        "Note": str(Note).replace(" ",""),
                         "Status": Status[1:],
-                        "ECTS": ECTS.replace(" ",""),
-                        "Punkte": Punkte.replace(" ",""),
-                        "Anrechnung": Anrechnung.replace(" ",""),
-                        "Versuch": Versuch.replace(" ",""),
+                        "ECTS": str(ECTS).replace(" ",""),
+                        "Punkte": str(Punkte).replace(" ",""),
+                        "Anrechnung": str(Anrechnung).replace(" ",""),
+                        "Versuch": str(Versuch).replace(" ",""),
                         "Datum": Datum
                     }
     return(klausurEintrag)
