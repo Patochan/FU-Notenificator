@@ -23,4 +23,4 @@ von https://api.telegram.org/bot%BOTID%/getUpdates (wobei %BOTID% der zuvor gene
 
 
 #### [STORE]
-- filename = lokales File, in welchen die Klausuren für den Vergleich abgespeichert werden.
+- filename = lokales File, in welchem die Klausuren für den Vergleich(vorher/nachher) abgespeichert werden.
