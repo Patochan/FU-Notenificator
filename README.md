@@ -7,10 +7,10 @@ Das Skript loggt sich mit deinen Zugangsdaten ins POS ein, liest alle Prüfungse
 ## Voraussetzungen
 
 - Python 3
-- Die Pakete `requests` und `lxml`:
+- Die Pakete aus `requirements.txt` (`requests` und `lxml`):
 
   ```sh
-  pip install requests lxml
+  pip install -r requirements.txt
   ```
 
 - Zugang zum POS der FernUni (Benutzername und Passwort)
